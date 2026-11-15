@@ -1,0 +1,13 @@
+{
+  "name": "tiketku",
+  "private": true,
+  "workspaces": [
+    "contracts",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "install-all": "npm install && npm run install --workspace contracts && npm run install --workspace backend && npm run install --workspace frontend"
+  }
+}
+

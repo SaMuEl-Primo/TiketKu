@@ -1,0 +1,2 @@
+node_modules/\n.env\n.env.*\nbuild/\ncoverage/\n.DS_Store\ndist/\n.vscode/\n.idea/\n*.log\n.npm\n*.tgz\n# Next.js\n.next/\nout/\n# Hardhat\nartifacts/\ncache/\n
+node_modules

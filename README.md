@@ -1,6 +1,29 @@
 @ -0,0 +1,111 @@
 # TiketKu
+1. **Smart‑contract development**
+   - Finalise all contract functions (event lifecycle, resale, check‑in, refunds).
+   - Write exhaustive Hardhat tests and run Slither analysis.
+   - Deploy script & CI pipeline.
 
+2. **Backend API development**
+   - Implement SIWE authentication, JWT middleware, and role verification.
+   - Build CRUD endpoints for events, tickets, and organizer applications.
+   - Add MongoDB schemas and validation.
+
+3. **Frontend UI development**
+   - Scaffold Next.js pages (Landing, Login, Dashboard, Organizer, Admin, Gate Staff).
+   - Integrate ethers.js v6 for contract interactions.
+   - Implement QR‑code generation & verification flow.
+
+4. **DevOps / CI‑CD & deployment**
+   - Set up GitHub Actions workflows: lint, test, build, and deploy to Vercel/Netlify.
+   - Configure environment variables for Sepolia, MongoDB Atlas, and JWT.
+   - Automate contract verification on Etherscan.
+
+5. **Security & testing**
+   - Run static analysis (Slither, MythX) on contracts.
+   - Perform penetration testing on the backend (OWASP checks).
+   - Add end‑to‑end tests for the full dApp flow.
 [![Build Status](https://github.com/SaMuEl-Primo/TiketKu/actions/workflows/ci.yml/badge.svg)](https://github.com/SaMuEl-Primo/TiketKu/actions)
 [![Coverage Status](https://coveralls.io/repos/github/SaMuEl-Primo/TiketKu/badge.svg?branch=main)](https://coveralls.io/github/SaMuEl-Primo/TiketKu?branch=main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

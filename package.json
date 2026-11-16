@@ -2,12 +2,11 @@
   "name": "tiketku",
   "private": true,
   "workspaces": [
-    "contracts",
-    "backend",
-    "frontend"
+    "ticket-chain",
+    "backend"
   ],
   "scripts": {
-    "install-all": "npm install && npm run install --workspace contracts && npm run install --workspace backend && npm run install --workspace frontend"
+    "install-all": "npm install",
+    "test": "npm test --workspace ticket-chain"
   }
 }
-

@@ -47,6 +47,8 @@ contract EventTicket is ERC721, AccessControl, ReentrancyGuard {
     error NotListed();
     error NothingToWithdraw();
     error TransferFailed();
+    error NotEventOwner();
+    error EventHasSales();
 
     event EventCreated(uint256 indexed eventId, address indexed organizer, uint256 price, uint256 maxSupply);
     event TicketPurchased(uint256 indexed eventId, uint256 indexed tokenId, address indexed buyer);
@@ -55,6 +57,8 @@ contract EventTicket is ERC721, AccessControl, ReentrancyGuard {
     event TicketResold(uint256 indexed tokenId, address indexed from, address indexed to, uint256 price);
     event CheckedIn(uint256 indexed tokenId, address indexed attendee);
     event Withdrawn(address indexed account, uint256 amount);
+    event EventUpdated(uint256 indexed eventId, uint256 price, uint256 maxSupply, uint64 eventDate);
+    event EventDeleted(uint256 indexed eventId, address indexed deletedBy);
 
     constructor() ERC721("EventTicket", "ETKT") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -77,6 +81,49 @@ contract EventTicket is ERC721, AccessControl, ReentrancyGuard {
         eventId = ++eventCount;
         events[eventId] = EventInfo(name, msg.sender, price, maxSupply, 0, maxResaleBps, eventDate);
         emit EventCreated(eventId, msg.sender, price, maxSupply);
+    }
+
+    /// @notice UPDATE on-chain: organizer pemilik event mengubah data event.
+    /// @dev Hanya boleh selama belum ada tiket terjual (sold == 0), supaya
+    ///      harga/batas resale tidak bisa diubah setelah ada pembeli.
+    function updateEvent(
+        uint256 eventId,
+        string calldata name,
+        uint256 price,
+        uint256 maxSupply,
+        uint16 maxResaleBps,
+        uint64 eventDate
+    ) external onlyRole(ORGANIZER_ROLE) {
+        EventInfo storage ev = events[eventId];
+        if (ev.organizer == address(0)) revert EventNotFound();
+        if (ev.organizer != msg.sender) revert NotEventOwner();
+        if (ev.sold != 0) revert EventHasSales();
+        if (
+            bytes(name).length == 0 || price == 0 || maxSupply == 0 ||
+            maxResaleBps < 10000 || maxResaleBps > 20000 ||
+            eventDate <= block.timestamp
+        ) revert InvalidParams();
+
+        ev.name = name;
+        ev.price = price;
+        ev.maxSupply = maxSupply;
+        ev.maxResaleBps = maxResaleBps;
+        ev.eventDate = eventDate;
+        emit EventUpdated(eventId, price, maxSupply, eventDate);
+    }
+
+    /// @notice DELETE on-chain: hapus event yang belum punya tiket terjual.
+    /// @dev Boleh dipanggil organizer pemilik event, atau admin (moderasi).
+    function deleteEvent(uint256 eventId) external {
+        EventInfo storage ev = events[eventId];
+        if (ev.organizer == address(0)) revert EventNotFound();
+        if (ev.organizer != msg.sender && !hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
+            revert NotEventOwner();
+        }
+        if (ev.sold != 0) revert EventHasSales();
+
+        delete events[eventId];
+        emit EventDeleted(eventId, msg.sender);
     }
 
     // ---------- Buyer: pembelian primer ----------

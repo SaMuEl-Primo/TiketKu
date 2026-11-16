@@ -43,7 +43,7 @@ router.get('/applications', requireAuth, requireAdmin, wrap(async (req, res) => 
 }));
 
 // Admin menandai status di database. Pemberian role yang sebenarnya terjadi
-// on-chain lewat verifyOrganizer() yang dipanggil dari frontend Admin.
+// on-chain lewat grantRole(ORGANIZER_ROLE, address) yang dipanggil dari frontend Admin.
 router.patch('/applications/:address', requireAuth, requireAdmin, wrap(async (req, res) => {
   const p = parse(
     z.object({ address: z.string().refine((a) => ethers.isAddress(a), 'Alamat tidak valid') }),

@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { ethers } from 'ethers';
 import { z } from 'zod';
 import { env } from '../config/env.js';
-import { isAdmin, isOrganizer } from '../config/chain.js';
+import { isAdmin, isOrganizer, isGate } from '../config/chain.js';
 import { Nonce } from '../models/Nonce.js';
 import { User } from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -65,11 +65,12 @@ router.post('/verify', wrap(async (req, res) => {
 
 // 3) Role aktif user (dibaca dari smart contract)
 router.get('/me', requireAuth, wrap(async (req, res) => {
-  const [admin, organizer] = await Promise.all([
+  const [admin, organizer, gate] = await Promise.all([
     isAdmin(req.user.address),
     isOrganizer(req.user.address),
+    isGate(req.user.address),
   ]);
-  res.json({ address: req.user.address, roles: { admin, organizer, buyer: true } });
+  res.json({ address: req.user.address, roles: { admin, organizer, gate, buyer: true } });
 }));
 
 export default router;

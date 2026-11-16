@@ -49,6 +49,74 @@ describe("EventTicket", () => {
     });
   });
 
+  describe("updateEvent (UPDATE on-chain)", () => {
+    it("organizer pemilik bisa update event yang belum terjual", async () => {
+      const { ticket, organizer, date } = await loadFixture(eventFixture);
+      const newPrice = ethers.parseEther("0.2");
+      await expect(ticket.connect(organizer).updateEvent(1, "Konser B", newPrice, 50, 12000, date + 86400))
+        .to.emit(ticket, "EventUpdated").withArgs(1, newPrice, 50, date + 86400);
+      const ev = await ticket.events(1);
+      expect(ev.name).to.equal("Konser B");
+      expect(ev.price).to.equal(newPrice);
+      expect(ev.maxSupply).to.equal(50);
+    });
+    it("GAGAL: organizer lain bukan pemilik event", async () => {
+      const { ticket, admin, organizer, stranger, date } = await loadFixture(eventFixture);
+      await ticket.connect(admin).grantRole(await ticket.ORGANIZER_ROLE(), stranger.address);
+      await expect(ticket.connect(stranger).updateEvent(1, "Hack", PRICE, 2, CAP_BPS, date))
+        .to.be.revertedWithCustomError(ticket, "NotEventOwner");
+    });
+    it("GAGAL: buyer (tanpa role) tidak bisa update", async () => {
+      const { ticket, buyer1, date } = await loadFixture(eventFixture);
+      await expect(ticket.connect(buyer1).updateEvent(1, "X", PRICE, 2, CAP_BPS, date)).to.be.reverted;
+    });
+    it("GAGAL: event sudah ada tiket terjual", async () => {
+      const { ticket, organizer, date } = await loadFixture(boughtFixture);
+      await expect(ticket.connect(organizer).updateEvent(1, "X", PRICE, 2, CAP_BPS, date))
+        .to.be.revertedWithCustomError(ticket, "EventHasSales");
+    });
+    it("GAGAL: event tidak ada / parameter tidak valid", async () => {
+      const { ticket, organizer, date } = await loadFixture(eventFixture);
+      await expect(ticket.connect(organizer).updateEvent(99, "X", PRICE, 2, CAP_BPS, date))
+        .to.be.revertedWithCustomError(ticket, "EventNotFound");
+      await expect(ticket.connect(organizer).updateEvent(1, "", PRICE, 2, CAP_BPS, date))
+        .to.be.revertedWithCustomError(ticket, "InvalidParams");
+      await expect(ticket.connect(organizer).updateEvent(1, "X", PRICE, 2, 9000, date))
+        .to.be.revertedWithCustomError(ticket, "InvalidParams");
+    });
+  });
+
+  describe("deleteEvent (DELETE on-chain)", () => {
+    it("organizer pemilik bisa hapus event yang belum terjual", async () => {
+      const { ticket, organizer } = await loadFixture(eventFixture);
+      await expect(ticket.connect(organizer).deleteEvent(1))
+        .to.emit(ticket, "EventDeleted").withArgs(1, organizer.address);
+      expect((await ticket.events(1)).organizer).to.equal(ethers.ZeroAddress);
+    });
+    it("admin bisa menghapus event (moderasi)", async () => {
+      const { ticket, admin } = await loadFixture(eventFixture);
+      await expect(ticket.connect(admin).deleteEvent(1)).to.emit(ticket, "EventDeleted");
+    });
+    it("GAGAL: orang lain tidak bisa menghapus", async () => {
+      const { ticket, stranger } = await loadFixture(eventFixture);
+      await expect(ticket.connect(stranger).deleteEvent(1))
+        .to.be.revertedWithCustomError(ticket, "NotEventOwner");
+    });
+    it("GAGAL: event sudah ada tiket terjual", async () => {
+      const { ticket, organizer } = await loadFixture(boughtFixture);
+      await expect(ticket.connect(organizer).deleteEvent(1))
+        .to.be.revertedWithCustomError(ticket, "EventHasSales");
+    });
+    it("GAGAL: hapus dua kali, dan event terhapus tidak bisa dibeli", async () => {
+      const { ticket, organizer, buyer1 } = await loadFixture(eventFixture);
+      await ticket.connect(organizer).deleteEvent(1);
+      await expect(ticket.connect(organizer).deleteEvent(1))
+        .to.be.revertedWithCustomError(ticket, "EventNotFound");
+      await expect(ticket.connect(buyer1).buyTicket(1, { value: PRICE }))
+        .to.be.revertedWithCustomError(ticket, "EventNotFound");
+    });
+  });
+
   describe("buyTicket", () => {
     it("buyer bisa membeli dan menerima NFT", async () => {
       const { ticket, buyer1 } = await loadFixture(eventFixture);

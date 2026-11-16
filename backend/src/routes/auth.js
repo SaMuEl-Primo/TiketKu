@@ -45,7 +45,16 @@ router.post('/verify', wrap(async (req, res) => {
   const key = address.toLowerCase();
 
   // Ambil sekaligus hapus nonce: sekali pakai, mencegah replay.
-  const record = await Nonce.findOneAndDelete({ address: key, expiresAt: { $gt: new Date() } });
+  const record = await Nonce.findOne({
+  address: key,
+  expiresAt: { $gt: new Date() }
+});
+
+if (!record) {
+  return res.status(401).json({
+    error: 'Nonce tidak ada atau kedaluwarsa'
+  });
+}
   if (!record) return res.status(401).json({ error: 'Nonce tidak ada atau kedaluwarsa' });
 
   let recovered;
@@ -57,6 +66,17 @@ router.post('/verify', wrap(async (req, res) => {
   if (recovered.toLowerCase() !== key) {
     return res.status(401).json({ error: 'Tanda tangan tidak cocok dengan alamat' });
   }
+  const consumed = await Nonce.findOneAndDelete({
+  _id: record._id,
+  nonce: record.nonce,
+  expiresAt: { $gt: new Date() }
+});
+
+if (!consumed) {
+  return res.status(401).json({
+    error: 'Nonce sudah digunakan'
+  });
+}
 
   await User.updateOne({ address: key }, { $setOnInsert: { address: key } }, { upsert: true });
   const token = jwt.sign({}, env.jwtSecret, { algorithm: 'HS256', subject: key, expiresIn: '1h' });
